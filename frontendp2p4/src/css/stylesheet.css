@@ -1,0 +1,1091 @@
+/* ======= INDEX ======= */
+.registro-alert-doctor {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #dc3545;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    z-index: 9999;
+    animation: fadeOut 5s forwards;
+}
+/* Search */
+.search-contenido-doctor {
+    margin: 20px 60px;
+    background-color: #eeeeee;
+    justify-content: center;
+}
+.search-bar-doctor {
+    background: #ffffff;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    width: 90%;
+    margin-left: 70px;
+    margin-top: 20px;
+}
+.search-bar-doctor form {
+    display: flex;
+    gap: 10px;
+}
+.search-bar-doctor input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+.search-bar-doctor button {
+    background: #0d6efd;
+    color: white;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.search-bar-doctor button:hover {
+    background: #084298;
+}
+/* Cards */
+.cards-doctor {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.medico-card-doctor {
+    background: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    width: 90%;
+    margin-left: 20px;
+    margin-top: 20px;
+}
+/* Card left */
+.card-left-doctor {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+.doctor-img-doctor {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+}
+.card-left-doctor h4 {
+    margin: 0;
+    font-size: 17px;
+}
+.card-left-doctor p {
+    margin: 5px 0;
+    text-align: center;
+}
+/* Card right */
+.card-right-doctor {
+    text-align: right;
+    display: flex;
+    justify-content: center;
+}
+
+.card-right-doctor p{
+    font-weight: bold;
+    color: chocolate;
+    font-size: medium;
+}
+.horario-group-doctor {
+    margin-bottom: 8px;
+    margin-right: 70px;
+}
+.h-doctor {
+    display: flex;
+    margin: 5px 0;
+    text-align: center;
+}
+.h-doctor p {
+    font-weight: bold;
+    color: #007bff;
+    font-size: 17px;
+    margin: 0 0 0 5px;
+}
+.horas-doctor span {
+    background: #e3f2fd;
+    margin-right: 5px;
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-size: 12px;
+    display: inline-block;
+}
+/* Botón */
+.boton-doctor button {
+    background: #e3e8ff;
+    color: #007bff;
+    border: none;
+    padding: 8px 8px;
+    margin-top: 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 40px;
+}
+.card-right-doctor button i {
+    margin-left: 5px;
+}
+.boton-doctor button:hover {
+    background-color: #c6d2ff;
+}
+/* Animación */
+@keyframes fadeOut {
+    0% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { opacity: 0; display: none; }
+}
+.hora-libre {
+    background: #eaf4ff;  /* azul claro */
+    color: #007bff;       /* azul oscuro */
+    padding: 4px 12px;
+    margin: 5px 0;
+    border-radius: 50px;
+    border: none;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.hora-libre:hover {
+    background: #cce6ff;
+}
+
+.hora-ocupada {
+    background: #ffcccc;
+    color: #cc0000;
+    padding: 4px 12px;
+    margin: 5px 0;
+    border-radius: 50px;
+    border: none;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+/*ABOUT*/
+/* Contenedor principal */
+.about-contenedor {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 60vh; /* Centrado vertical */
+    text-align: center;
+}
+
+/* Título principal */
+.about-titulo {
+    font-size: 35px;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+/* Lista de nombres */
+.about-nombres {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Estilo individual de cada nombre */
+.about-nombre-item {
+    display: inline-block;
+    background-color: #3498db;
+    padding: 8px;
+    margin: 10px 0;
+    border-radius: 8px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.about-nombre-item p {
+    font-size: 24px;
+    font-weight: bold;
+    color: white;
+    margin: 0;
+}
+
+/* Hover */
+.about-nombre-item:hover {
+    background-color: darkkhaki;
+    transform: scale(1.1);
+}
+
+
+/* ======= LOGIN ======= */
+.login-container-auth {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 60vh;
+}
+.login-box-auth {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 300px;
+}
+.user-avatar-auth img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    margin-bottom: 10px;
+}
+.input-group-auth {
+    display: flex;
+    align-items: center;
+    background-color: white;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+.input-group-auth i {
+    margin-right: 10px;
+}
+.input-group-auth input {
+    border: none;
+    outline: none;
+    width: 100%;
+}
+/* Botón login / registro */
+.login-btn-auth {
+    background-color: #17a2b8;
+    color: white;
+    border: none;
+    padding: 10px;
+    width: 100%;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+    display: inline-block;
+    text-align: center;
+    text-decoration: none;
+}
+.login-btn-auth:hover {
+    background-color: #138496;
+}
+/* Link de registro */
+.register-link-auth {
+    color: red;
+    text-decoration: none;
+    font-weight: bold;
+}
+.register-link-auth:hover {
+    text-decoration: underline;
+}
+/* Mensaje de error */
+.error-message-auth {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+/* ======= ADMINISTRADOR ======= */
+.admin-contenido {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 20px;
+    background: #f9f9f9;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.admin-contenido h1 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #34495e;
+}
+.admin-medico-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.admin-medico-table thead {
+    background: #2c3e50;
+    color: white;
+}
+.admin-medico-table th, .admin-medico-table td {
+    padding: 15px;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+}
+.admin-medico-table tr:hover {
+    background: #f1f1f1;
+}
+.btn-aprobar, .btn-rechazar {
+    text-decoration: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    font-weight: bold;
+    transition: background 0.3s;
+}
+.btn-aprobar {
+    background: #27ae60;
+    color: white;
+}
+.btn-aprobar:hover {
+    background: #1e8449;
+}
+.btn-rechazar {
+    background: #e74c3c;
+    color: white;
+}
+.btn-rechazar:hover {
+    background: #c0392b;
+}
+/* ======= DOCTOR CITAS ======= */
+.doctor-citas-contenido {
+    margin: 40px 200px;
+    max-width: 1000px;
+    background-color: #eeeeee;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.doctor-citas-contenido h2 {
+    color: #1e5dc9;
+    font-style: italic;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.doctor-search-bar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.doctor-search-bar select,
+.doctor-search-bar input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.doctor-btn-search {
+    padding: 8px 12px;
+    background: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.doctor-cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.doctor-card-cita {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    flex-wrap: wrap;
+}
+
+.doctor-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+}
+
+.doctor-left img {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+}
+
+.doctor-paciente-nombre {
+    font-weight: bold;
+}
+
+.doctor-right {
+    display: flex;
+    align-items: flex-end;
+    gap: 5px;
+    margin-right: 20px;
+}
+
+.doctor-right p, span {
+    margin-right: 50px;
+    color: #2c3e50;
+}
+
+.doctor-fecha {
+    font-size: 15px;
+    color: chocolate;
+}
+
+.badge-pending-doctor,
+.badge-attended-doctor,
+.badge-cancelled-doctor {
+    padding: 4px 8px;
+    border-radius: 25px;
+    font-weight: bold;
+    font-size: 0.85em;
+    display: inline-block;
+}
+
+.badge-pending-doctor {
+    background: gold;
+}
+
+.badge-attended-doctor {
+    background: #28a745;
+    color: #fff;
+}
+
+.badge-cancelled-doctor {
+    background: #dc3545;
+    color: #fff;
+}
+
+.doctor-acciones {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.doctor-acciones button {
+    background: none;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 4px 6px;
+    font-size: 0.9em;
+}
+
+.link-green-doctor {
+    color: #28a745;
+}
+
+.link-red-doctor {
+    color: #dc3545;
+}
+
+.link-view-doctor {
+    color: #007bff;
+}
+
+.mensaje-exito {
+    background-color: #d4edda;
+    color: #155724;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    text-align: center;
+    font-weight: bold;
+}
+
+
+/* ======= DOCTOR PROFILE VIEW ======= */
+.doctor-perfil-container {
+    max-width: 1000px;
+    margin: 50px auto;
+    padding: 40px;
+    background: #dee7ed;
+    border-radius: 20px;
+    font-family: 'Poppins', sans-serif;
+    color: #3A73C4;
+}
+
+.doctor-perfil-title {
+    text-align: center;
+    font-size: 32px;
+    font-weight: 700;
+    color: #3A73C4;
+    margin-bottom: 30px;
+    letter-spacing: 1px;
+}
+
+.doctor-perfil-body {
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.doctor-perfil-foto {
+    flex-shrink: 0;
+    background-color: #ffffff;
+    padding: 15px;
+    border-radius: 20px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+}
+
+.doctor-perfil-img {
+    border-radius: 50%; /* Para que se vea circular */
+    border: 5px solid #00b4d8;
+    box-shadow: 0 4px 20px rgba(0, 180, 216, 0.3);
+}
+
+.doctor-perfil-foto img
+{
+    width: 190px;
+    height: 180px;
+}
+
+
+.doctor-perfil-info {
+    flex: 1;
+    background-color: #ffffffdd;
+    padding: 20px;
+    border-radius: 20px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+}
+
+.doctor-perfil-info p {
+    margin: 12px 0;
+    font-size: 17px;
+    line-height: 1.6;
+}
+
+.doctor-perfil-info i {
+    color: #00b4d8;
+    margin-right: 8px;
+}
+
+.doctor-perfil-horarios {
+    list-style-type: none;
+    padding-left: 0;
+    margin-top: 12px;
+}
+
+.doctor-perfil-horarios li {
+    padding: 6px 0;
+    font-size: 15px;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ======= DOCTOR SETTINGS ======= */
+.doctor-settings-container {
+    max-width: 1300px;
+    margin: 40px auto;
+    padding: 30px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    font-family: Arial, sans-serif;
+}
+
+.doctor-settings-container h2 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 30px;
+}
+.doctor-settings-form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+    margin-bottom: 30px;
+}
+.doctor-settings-form-col {
+    flex: 1;
+}
+.imagen-col {
+    max-width: 300px;
+}
+.doctor-settings-form-group {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+}
+.doctor-settings-form-label {
+    margin-bottom: 8px;
+    color: #34495e;
+    font-weight: bold;
+}
+.doctor-settings-form-input,
+.doctor-settings-form-select {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    transition: border-color 0.3s ease;
+}
+.doctor-settings-form-input:focus,
+.doctor-settings-form-select:focus {
+    border-color: #3498db;
+    outline: none;
+}
+.doctor-settings-btn {
+    width: 100%;
+    padding: 12px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+.doctor-settings-btn:hover {
+    background: #2980b9;
+}
+.doctor-settings-horario-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.doctor-settings-horario-row label {
+    width: 100px;
+}
+.doctor-settings-horario-row input[type="time"] {
+    width: 120px;
+}
+.doctor-settings-img-preview {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid #ccc;
+    margin-top: 10px;
+}
+
+
+
+
+
+
+/* ======= CRONOGRAMA ======= */
+    .cronograma-section {
+        padding: 30px;
+        max-width: 1000px;
+        margin: 0 auto;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .cronograma-card {
+        background: #ffffff;
+        display: flex;
+        justify-content: space-between;
+        padding: 30px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .cronograma-card-left {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+    }
+
+    .cronograma-doctor-img {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        border: 2px solid #3498db;
+    }
+
+    .cronograma-card-left h4 {
+        margin: 0;
+        font-size: 18px;
+        color: #2c3e50;
+    }
+
+    .cronograma-card-left p {
+        margin: 4px 0;
+        color: #555;
+    }
+
+    .cronograma-card-right {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        margin-left: 20px;
+    }
+
+    .cronograma-horario-group {
+        margin-bottom: 8px;
+        margin-right: 20px;
+    }
+
+    .cronograma-horario-group p {
+        margin: 0;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+
+    .cronograma-horas span {
+        background: #eaf4ff;
+        margin-right: 5px;
+        padding: 4px 8px;
+        border-radius: 5px;
+        font-size: 12px;
+        display: inline-block;
+        color: #007bff;
+        margin-bottom: 10px;
+    }
+
+    .cronograma-botones {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    .cronograma-botones a {
+        text-decoration: none;
+    }
+
+    .cronograma-botones button {
+        background: #e3e8ff;
+        color: #007bff;
+        border: none;
+        padding: 8px 8px;
+        margin-top: 10px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+        margin-bottom: 40px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .cronograma-botones button i {
+        font-size: 16px;
+    }
+
+    .cronograma-botones button:hover {
+        background-color: #c6d2ff;
+    }
+
+    .cronograma-back-btn {
+        display: block;
+        width: fit-content;
+        margin: 0 auto 20px auto;
+        background: #007bff;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: bold;
+        text-decoration: none;
+    }
+
+    .cronograma-back-btn:hover {
+        background: #0056b3;
+    }
+
+
+    .pfecha {
+        color: chocolate;
+    }
+
+    .btn-hora-libre {
+        background: #eaf4ff;
+        color: #007bff;
+        padding: 4px 12px;
+        margin: 5px 0;
+        border-radius: 50px;
+        border: none;
+        font-size: 14px;
+        font-weight: bold;
+        display: inline-block;
+        cursor: pointer;
+        transition: background 0.3s ease;
+    }
+
+    .btn-hora-libre:hover {
+        background: #cce6ff;
+    }
+
+    .btn-hora-ocupada {
+        background: #ffcccc;
+        color: #cc0000;
+        padding: 4px 12px;
+        margin: 5px 0;
+        border-radius: 50px;
+        border: none;
+        font-size: 14px;
+        font-weight: bold;
+        display: inline-block;
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+
+
+/* Confirmar Cita CSS */
+
+.cita-confirm-wrapper {
+    display: flex;
+    justify-content: center;
+    padding: 40px 0;
+    background-color: #f9fbfd;
+}
+
+.cita-confirm-form {
+    width: 100%;
+    max-width: 400px;
+}
+
+.cita-confirm-card {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    text-align: center;
+    box-shadow: 0 0 10px rgba(0,0,0,0.08);
+}
+
+.cita-confirm-avatar {
+    width: 100px;
+    border-radius: 50%;
+    margin-bottom: 15px;
+}
+
+.cita-confirm-info {
+    margin-top: 15px;
+    font-size: 16px;
+    color: #333;
+}
+
+.cita-confirm-info i {
+    margin-right: 8px;
+    color: #555;
+}
+
+.cita-confirm-nombre,
+.cita-confirm-fecha,
+.cita-confirm-ubicacion {
+    margin-bottom: 12px;
+    font-weight: 500;
+}
+
+.cita-confirm-botones {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.btn-confirmar {
+    background-color: #1e88e5;
+    color: white;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.btn-confirmar:hover {
+    background-color: #1565c0;
+}
+
+.btn-cancelar {
+    background-color: #f0f0f0;
+    color: #555;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+.btn-cancelar:hover {
+    background-color: #e0e0e0;
+}
+
+
+/*HISTORICO*/
+.historial-citas-container {
+    max-width: 2000px;
+    margin: 40px auto;
+    padding: 20px;
+    background: #eeeeee;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    font-family: 'Segoe UI', sans-serif;
+    width: 60%;
+    color: #2c3e50;
+}
+
+.filtros-form {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 50px;
+    flex-wrap: wrap;
+    margin-top: 50px;
+}
+
+.filtros-form select,
+.filtros-form input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.lista-citas .cita-card {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #eee;
+    padding: 12px 0;
+    background-color: white;
+    margin-top: 7px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+.lista-citas1 {
+    justify-content: left;
+    text-align: left;
+    margin-left: 10px;
+}
+
+.lista-citas2 {
+    text-align: right;
+    margin-right: 10px;
+}
+
+.lista-citas2 span{
+    margin-right: 0px;
+}
+
+.estado {
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.estado.pendiente { color: orange; }
+.estado.confirmada { color: green; }
+.estado.cancelada { color: red; }
+.estado.completada { color: blue; }
+
+.filtros-form button {
+    padding: 10px 20px;
+    background-color: #3A73C4;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.25s ease, transform 0.1s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.filtros-form button:hover {
+    background-color: #305faa;
+}
+
+.filtros-form button:active {
+    transform: scale(0.97);
+}
+
+
+/*NOTA*/
+.modal-nota-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.modal-nota {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 10px;
+    width: 400px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.modal-nota h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+.modal-nota textarea {
+    width: 100%;
+    padding: 0.5rem;
+    font-size: 1rem;
+    resize: none;
+    margin-bottom: 1rem;
+}
+
+.modal-nota-botones {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+.btn-confirmar {
+    background-color: #4CAF50;
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-cancelar {
+    background-color: #f44336;
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    cursor: pointer;
+}
+
+
+/*VER NOTA*/
+.modal-ver-nota {
+    background-color: #f9f9f9;
+    padding: 1rem;
+    border-radius: 6px;
+    min-height: 100px;
+    font-size: 1rem;
+    color: #333;
+    white-space: pre-wrap;
+    margin-bottom: 1rem;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+
+
