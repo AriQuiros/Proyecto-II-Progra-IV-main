@@ -13,7 +13,7 @@ const MedicoPanel = () => {
     const [mostrarNotaModal, setMostrarNotaModal] = useState(false);
     const [notaTexto, setNotaTexto] = useState('');
     const [citaSeleccionada, setCitaSeleccionada] = useState(null);
-
+    const [tiempo, setTiempo] = useState(0);
     const [mostrarVerNotaModal, setMostrarVerNotaModal] = useState(false);
     const [notaParaVer, setNotaParaVer] = useState('');
 
@@ -31,14 +31,15 @@ const MedicoPanel = () => {
             });
 
             const data = await res.json();
-            setCitas(data);
+            setCitas(data.data);
+            setTiempo(data.tiempo);
         } catch (err) {
             console.error('Error al cargar citas:', err);
         }
     };
 
     useEffect(() => {
-      fetchCitas();
+        fetchCitas();
     }, [usuario, estado, paciente]);
 
     const confirmarCita = (id) => {
@@ -100,6 +101,7 @@ const MedicoPanel = () => {
     return (
         <div className="doctor-citas-contenido">
             <h2>{usuario?.nombre} - Panel de Citas</h2>
+            <p>⏱ Tiempo: {(tiempo / 1_000_000).toFixed(2)} ms</p>
             {mensaje && <p className="mensaje-exito">{mensaje}</p>}
 
             <form className="doctor-search-bar" onSubmit={(e) => { e.preventDefault(); fetchCitas(); }}>

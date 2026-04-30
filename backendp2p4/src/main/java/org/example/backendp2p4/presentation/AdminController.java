@@ -1,11 +1,13 @@
 package org.example.backendp2p4.presentation;
 import org.example.backendp2p4.dto.MedicoAprobadoDTO;
+import org.example.backendp2p4.dto.ResponseTiempoDTO;
 import org.example.backendp2p4.logic.Medico;
 import org.example.backendp2p4.logic.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import org.example.backendp2p4.util.ParallelUtils;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -19,9 +21,20 @@ public class AdminController {
     }
 
     @GetMapping("/doctores")
-    public ResponseEntity<List<MedicoAprobadoDTO>> listarDoctores() {
-        List<MedicoAprobadoDTO> medicos = service.convertirAMedicoAprobadoDTO((List<Medico>) service.findAllMedicos());
-        return ResponseEntity.ok(medicos);
+    public ResponseEntity<ResponseTiempoDTO<List<MedicoAprobadoDTO>>> listarDoctores() {
+
+        long inicio = System.nanoTime();
+
+        List<MedicoAprobadoDTO> medicos = service.convertirAMedicoAprobadoDTO(
+                (List<Medico>) service.findAllMedicos()
+        );
+
+        long fin = System.nanoTime();
+
+        ResponseTiempoDTO<List<MedicoAprobadoDTO>> response =
+                new ResponseTiempoDTO<>(medicos, (fin - inicio));
+
+        return ResponseEntity.ok(response);
     }
 
 

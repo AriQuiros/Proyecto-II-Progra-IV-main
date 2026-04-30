@@ -10,7 +10,7 @@ const BuscarMedicos = () => {
     const [especialidad, setEspecialidad] = useState('');
     const [ciudad, setCiudad] = useState('');
     const [medicos, setMedicos] = useState([]);
-
+    const [tiempo, setTiempo] = useState(0);
     const { loading } = useContext(AppContext);
 
     useEffect(() => {
@@ -21,8 +21,10 @@ const BuscarMedicos = () => {
 
         fetch(`http://localhost:8080/api/medicos?especialidad=${esp}&ciudad=${ciu}`)
             .then(res => res.json())
-            .then(data => setMedicos(data))
-            .catch(err => console.error("Error al cargar médicos:", err));
+            .then(data => {
+                setMedicos(data.data);
+                setTiempo(data.tiempo);
+            })            .catch(err => console.error("Error al cargar médicos:", err));
     }, []);
 
     const handleBuscar = async (e) => {
@@ -33,7 +35,8 @@ const BuscarMedicos = () => {
         try {
             const res = await fetch(`http://localhost:8080/api/medicos?especialidad=${especialidad}&ciudad=${ciudad}`);
             const data = await res.json();
-            setMedicos(data);
+            setMedicos(data.data);
+            setTiempo(data.tiempo);
         } catch (error) {
             console.error("Error al buscar médicos:", error);
         }
@@ -50,7 +53,9 @@ const BuscarMedicos = () => {
                     <button type="submit">Search</button>
                 </form>
             </section>
-
+            <p style={{ textAlign: "center" }}>
+                ⏱ Tiempo: {(tiempo / 1_000_000).toFixed(2)} ms
+            </p>
             <section className="cards-doctor">
                 {medicos.length === 0 ? (
                     <p style={{ textAlign: 'center', marginTop: '20px' }}>No se encontraron médicos disponibles.</p>

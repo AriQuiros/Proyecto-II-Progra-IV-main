@@ -2,6 +2,7 @@ package org.example.backendp2p4.logic;
 import org.example.backendp2p4.data.*;
 import org.example.backendp2p4.dto.*;
 import org.example.backendp2p4.security.JwtUtil;
+import org.example.backendp2p4.util.ParallelUtils;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -87,13 +88,16 @@ public class Service {
         return medicoRepository.findAll();
     }
 
-    public Iterable<Medico> findAllMedicoAprobados(){
-        List<org.example.backendp2p4.logic.Medico> medicos = new ArrayList<>();
-        for(org.example.backendp2p4.logic.Medico medico : medicoRepository.findAll()){
-            if(Objects.equals(medico.getEstado(), "APROBADO"))
-                medicos.add(medico);
-        }
-        return medicos;
+    public Iterable<Medico> findAllMedicoAprobados() {
+        List<Medico> medicos = new ArrayList<>();
+        medicoRepository.findAll().forEach(medicos::add);
+
+        return ParallelUtils.mapearEnParalelo(medicos, medico ->
+                        Objects.equals(medico.getEstado(), "APROBADO") ? medico : null
+                )
+                .stream()
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     public Optional<Medico> findMedicoById(Integer id) {
@@ -162,8 +166,12 @@ public class Service {
     }
 
     public List<MedicoCardDTO> convertirAMedicoCardDTO(List<Medico> medicos) {
-        List<MedicoCardDTO> result = new ArrayList<>();
-        for (Medico medico : medicos) {
+        medicos.forEach(medico -> {
+            Hibernate.initialize(medico.getUsuario());
+            Hibernate.initialize(medico.getHorarios());
+        });
+
+        return ParallelUtils.mapearEnParalelo(medicos, medico -> {
             MedicoCardDTO dto = new MedicoCardDTO();
             mapearDatosBasicosMedico(medico, dto);
 
@@ -172,37 +180,42 @@ public class Service {
                     .collect(Collectors.toList());
 
             dto.setHorarios(horarios);
-            result.add(dto);
-        }
-        return result;
+            return dto;
+        });
     }
 
     public List<MedicoAprobadoDTO> convertirAMedicoAprobadoDTO(List<Medico> medicos) {
-        List<MedicoAprobadoDTO> result = new ArrayList<>();
-        for (Medico medico : medicos) {
+        medicos.forEach(medico -> Hibernate.initialize(medico.getUsuario()));
+
+        return ParallelUtils.mapearEnParalelo(medicos, medico -> {
             MedicoAprobadoDTO dto = new MedicoAprobadoDTO();
             mapearDatosBasicosMedico(medico, dto);
-            result.add(dto);
-        }
-        return result;
+            return dto;
+        });
     }
 
     public MedicoCardDTO convertirAMedicoPerfilDTO(Medico medico) {
+        Hibernate.initialize(medico.getUsuario());
+        Hibernate.initialize(medico.getHorarios());
+
         MedicoCardDTO dto = new MedicoCardDTO();
         mapearDatosBasicosMedico(medico, dto);
 
         Map<Integer, Horario> horariosPorDia = medico.getHorarios().stream()
                 .collect(Collectors.toMap(Horario::getDia, h -> h, (a, b) -> a));
 
-        List<HorarioDTO> listaHorarios = new ArrayList<>();
-        List<String> diasSemana = List.of("Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo");
+        List<String> diasSemana = List.of(
+                "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"
+        );
 
-        for (int i = 0; i < diasSemana.size(); i++) {
-            int numeroDia = i + 1;
+        List<Integer> numerosDia = List.of(1, 2, 3, 4, 5, 6, 7);
+
+        List<HorarioDTO> listaHorarios = ParallelUtils.mapearEnParalelo(numerosDia, numeroDia -> {
             HorarioDTO horarioDTO = new HorarioDTO();
-            horarioDTO.setDiaSemana(diasSemana.get(i));
+            horarioDTO.setDiaSemana(diasSemana.get(numeroDia - 1));
 
             Horario h = horariosPorDia.get(numeroDia);
+
             if (h != null) {
                 HorarioDTO hDTO = convertirAHorarioDTO(h, medico);
                 horarioDTO.setHoraInicio(hDTO.getHoraInicio());
@@ -215,17 +228,24 @@ public class Service {
                 horarioDTO.setFechaReal("");
                 horarioDTO.setOcupado(false);
             }
-            listaHorarios.add(horarioDTO);
-        }
+
+            return horarioDTO;
+        });
+
         dto.setHorarios(listaHorarios);
         return dto;
     }
 
     public List<MedicoCardDTO> getMedicosConHorarios() {
-        List<MedicoCardDTO> result = new ArrayList<>();
-        Iterable<Medico> medicos = medicoRepository.findMedicoByEstado("APROBADO");
+        List<Medico> medicos = new ArrayList<>();
+        medicoRepository.findMedicoByEstado("APROBADO").forEach(medicos::add);
 
-        for (Medico medico : medicos) {
+        medicos.forEach(medico -> {
+            Hibernate.initialize(medico.getUsuario());
+            Hibernate.initialize(medico.getHorarios());
+        });
+
+        return ParallelUtils.mapearEnParalelo(medicos, medico -> {
             MedicoCardDTO dto = new MedicoCardDTO();
             mapearDatosBasicosMedico(medico, dto);
 
@@ -237,9 +257,8 @@ public class Service {
                     .collect(Collectors.toList());
 
             dto.setHorarios(horarios);
-            result.add(dto);
-        }
-        return result;
+            return dto;
+        });
     }
 
     public Optional<Medico> autenticarYObtenerMedico(String authHeader) {

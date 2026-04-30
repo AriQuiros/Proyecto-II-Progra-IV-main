@@ -6,7 +6,7 @@ const Historico = () => {
     const [citas, setCitas] = useState([]);
     const [estado, setEstado] = useState("");
     const [medico, setMedico] = useState("");
-
+    const [tiempo, setTiempo] = useState(0);
     const [mostrarNotaModal, setMostrarNotaModal] = useState(false);
     const [notaSeleccionada, setNotaSeleccionada] = useState("");
 
@@ -25,7 +25,8 @@ const Historico = () => {
                     },
                 });
                 const data = await res.json();
-                setCitas(data);
+                setCitas(data.data);
+                setTiempo(data.tiempo);
             } catch (error) {
                 console.error("Error al cargar el historial de citas:", error);
             }
@@ -42,7 +43,7 @@ const Historico = () => {
     return (
         <div className="historial-citas-container">
             <h2>Historial de Citas del Paciente</h2>
-
+            <p>⏱ Tiempo: {(tiempo / 1_000_000).toFixed(2)} ms</p>
             <form onSubmit={handleSubmit} className="filtros-form">
                 <select value={estado} onChange={(e) => setEstado(e.target.value)}>
                     <option value="">Todos</option>

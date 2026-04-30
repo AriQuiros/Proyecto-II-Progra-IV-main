@@ -6,7 +6,7 @@ const AdminPanel = () => {
     const [doctores, setDoctores] = useState([]);
     const { usuario } = useContext(AppContext);
     const [mensaje, setMensaje] = useState('');
-
+    const [tiempo, setTiempo] = useState(0);
     useEffect(() => {
         if (usuario?.token) {
             (async () => {
@@ -24,7 +24,8 @@ const AdminPanel = () => {
                         return;
                     }
 
-                    setDoctores(data);
+                    setDoctores(data.data);
+                    setTiempo(data.tiempo);
                 } catch (err) {
                     console.error('Error en fetchDoctores:', err);
                 }
@@ -63,6 +64,7 @@ const AdminPanel = () => {
     return (
         <div className="admin-contenido">
             <h1>Lista de Doctores</h1>
+            <p>⏱ Tiempo: {(tiempo / 1_000_000).toFixed(2)} ms</p>
             {mensaje && <p className="mensaje-exito">{mensaje}</p>}
             <table className="admin-medico-table">
                 <thead>

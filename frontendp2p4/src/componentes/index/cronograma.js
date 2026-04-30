@@ -6,7 +6,7 @@ import doctorDefault from '../../imagenes/usuario.png';
 const Cronograma = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-
+    const [tiempo, setTiempo] = useState(0);
     const [medico, setMedico] = useState(null);
     const [prevId, setPrevId] = useState(null);
     const [nextId, setNextId] = useState(null);
@@ -17,9 +17,10 @@ const Cronograma = () => {
                 const res = await fetch(`http://localhost:8080/api/medicos/cronograma/${id}`);
                 if (!res.ok) throw new Error('No se pudo cargar el cronograma');
                 const data = await res.json();
-                setMedico(data.medico);
-                setPrevId(data.prevId);
-                setNextId(data.nextId);
+                setMedico(data.data.medico);
+                setPrevId(data.data.prevId);
+                setNextId(data.data.nextId);
+                setTiempo(data.tiempo);
             } catch (err) {
                 console.error("Error al cargar cronograma:", err);
             }
@@ -28,9 +29,13 @@ const Cronograma = () => {
 
     if (!medico) return <p style={{ textAlign: 'center' }}>Cargando cronograma...</p>;
 
+
     return (
         <section className="cronograma-section">
             <div>
+                <p style={{ textAlign: "center" }}>
+                    ⏱ Tiempo: {(tiempo / 1_000_000).toFixed(2)} ms
+                </p>
                 <div className="cronograma-card">
                     <div className="cronograma-card-left">
                         <img

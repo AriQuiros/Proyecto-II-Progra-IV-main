@@ -1,5 +1,6 @@
 package org.example.backendp2p4.presentation;
 import org.example.backendp2p4.dto.CitaHistorialDTO;
+import org.example.backendp2p4.dto.ResponseTiempoDTO;
 import org.example.backendp2p4.logic.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -11,6 +12,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.example.backendp2p4.util.ParallelUtils;
 
 @RestController
 @RequestMapping("/api/pacientes")
@@ -45,18 +47,29 @@ public class PacienteController {
     }
 
     @GetMapping("/citas")
-    public ResponseEntity<List<CitaHistorialDTO>> obtenerHistorialCitas(
+    public ResponseEntity<ResponseTiempoDTO<List<CitaHistorialDTO>>> obtenerHistorialCitas(
             @RequestParam(required = false) String estado,
             @RequestParam(required = false) String medico,
             @RequestHeader("Authorization") String authHeader) {
+
+        long inicio = System.nanoTime();
 
         Optional<Paciente> pacienteOpt = service.autenticarYObtenerPaciente(authHeader);
         if (pacienteOpt.isEmpty()) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 
         List<Cita> citas = service.buscarCitasPorPaciente(pacienteOpt.get(), estado, medico);
-        List<CitaHistorialDTO> dtoList = citas.stream().map(CitaHistorialDTO::new).toList();
 
-        return ResponseEntity.ok(dtoList);
+        List<CitaHistorialDTO> dtoList = ParallelUtils.mapearEnParalelo(
+                citas,
+                CitaHistorialDTO::new
+        );
+
+        long fin = System.nanoTime();
+
+        ResponseTiempoDTO<List<CitaHistorialDTO>> response =
+                new ResponseTiempoDTO<>(dtoList, (fin - inicio));
+
+        return ResponseEntity.ok(response);
     }
 
 
