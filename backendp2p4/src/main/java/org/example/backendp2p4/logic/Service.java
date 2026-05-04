@@ -1,33 +1,55 @@
 package org.example.backendp2p4.logic;
-import org.example.backendp2p4.data.*;
-import org.example.backendp2p4.dto.*;
+
+import org.example.backendp2p4.config.ParallelConfig;
+import org.example.backendp2p4.data.CitaRepository;
+import org.example.backendp2p4.data.HorarioRepository;
+import org.example.backendp2p4.data.MedicoRepository;
+import org.example.backendp2p4.data.PacienteRepository;
+import org.example.backendp2p4.data.UsuarioRepository;
+import org.example.backendp2p4.dto.HorarioDTO;
+import org.example.backendp2p4.dto.MedicoAprobadoDTO;
+import org.example.backendp2p4.dto.MedicoBaseDTO;
+import org.example.backendp2p4.dto.MedicoCardDTO;
 import org.example.backendp2p4.security.JwtUtil;
 import org.example.backendp2p4.util.ParallelUtils;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
-import java.time.*;
+
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 @org.springframework.stereotype.Service
-
 public class Service {
 
     @Autowired
     private CitaRepository citaRepository;
+
     @Autowired
     private HorarioRepository horarioRepository;
+
     @Autowired
     private MedicoRepository medicoRepository;
+
     @Autowired
     private PacienteRepository pacienteRepository;
+
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    //usuarios
     public boolean existeUsuarioConNombre(String nombre) {
         return usuarioRepository.findFirstByNombre(nombre).isPresent();
     }
@@ -37,48 +59,104 @@ public class Service {
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
     }
 
-    //Citas
-    public Optional<org.example.backendp2p4.logic.Cita> findCitaById(Integer id) {
+    public Optional<Cita> findCitaById(Integer id) {
         return citaRepository.findById(id);
     }
 
-    public org.example.backendp2p4.logic.Cita saveCita(Cita cita) {
+    public Cita saveCita(Cita cita) {
         return citaRepository.save(cita);
     }
 
-    public List<org.example.backendp2p4.logic.Cita> buscarCitasPorMedico(Medico medico, String estado, String paciente) {
-        if (medico == null) return Collections.emptyList();
-
-        if (estado != null && estado.isBlank()) estado = null;
-        if (paciente != null && paciente.isBlank()) paciente = null;
-
-        if (estado == null && paciente == null) {
-            return citaRepository.findByDoctor(medico);
-        } else if (estado != null && paciente == null) {
-            return citaRepository.findByDoctorAndEstado(medico, estado);
-        } else if (estado == null) {
-            return citaRepository.findByDoctorAndPacienteUsuarioNombreContainingIgnoreCase(medico, paciente);
-        } else {
-            return citaRepository.findByDoctorAndEstadoAndPacienteUsuarioNombreContainingIgnoreCase(medico, estado, paciente);
+    public List<Cita> buscarCitasPorMedico(Medico medico, String estado, String paciente) {
+        if (medico == null) {
+            return Collections.emptyList();
         }
+
+        String estadoFiltro = normalizarParametro(estado);
+        String pacienteFiltro = normalizarParametro(paciente);
+
+        if (estadoFiltro == null && pacienteFiltro == null) {
+            return citaRepository.findByDoctorConPacienteUsuario(medico);
+        }
+
+        if (estadoFiltro != null && pacienteFiltro == null) {
+            return citaRepository.findByDoctorAndEstadoConPacienteUsuario(medico, estadoFiltro);
+        }
+
+        if (estadoFiltro == null) {
+            return citaRepository.findByDoctorAndPacienteNombreConPacienteUsuario(medico, pacienteFiltro);
+        }
+
+        return buscarCitasPorMedicoEnParalelo(medico, estadoFiltro, pacienteFiltro);
+    }
+
+    private List<Cita> buscarCitasPorMedicoEnParalelo(Medico medico, String estado, String paciente) {
+        ExecutorService executor = ParallelConfig.crearExecutor();
+
+        try {
+            CompletableFuture<List<Cita>> citasPorEstado = CompletableFuture.supplyAsync(
+                    () -> citaRepository.findByDoctorAndEstadoConPacienteUsuario(medico, estado),
+                    executor
+            );
+
+            CompletableFuture<List<Cita>> citasPorPaciente = CompletableFuture.supplyAsync(
+                    () -> citaRepository.findByDoctorAndPacienteNombreConPacienteUsuario(medico, paciente),
+                    executor
+            );
+
+            return citasPorEstado
+                    .thenCombine(citasPorPaciente, this::intersectarCitasPorId)
+                    .join();
+
+        } finally {
+            executor.shutdown();
+        }
+    }
+
+    private List<Cita> intersectarCitasPorId(List<Cita> primeraLista, List<Cita> segundaLista) {
+        Set<Integer> idsSegundaLista = segundaLista.stream()
+                .map(Cita::getId)
+                .collect(Collectors.toSet());
+
+        return primeraLista.stream()
+                .filter(cita -> idsSegundaLista.contains(cita.getId()))
+                .sorted(Comparator.comparing(Cita::getFechaHora).reversed())
+                .toList();
+    }
+
+    private String normalizarParametro(String valor) {
+        if (valor == null || valor.isBlank()) {
+            return null;
+        }
+        return valor.trim();
     }
 
     public List<Cita> buscarCitasPorPaciente(Paciente paciente, String estado, String medico) {
-        if (estado != null && estado.isBlank()) estado = null;
-        if (medico != null && medico.isBlank()) medico = null;
-        if (estado == null && medico == null) {
-            return citaRepository.findByPacienteOrderByFechaHoraDesc(paciente);
-        } else if (estado != null && medico == null) {
-            return citaRepository.findByPacienteAndEstadoOrderByFechaHoraDesc(paciente, estado);
-        } else if (estado == null) {
-            return citaRepository.findByPacienteAndDoctorUsuarioNombreContainingIgnoreCaseOrderByFechaHoraDesc(paciente, medico);
-        } else {
-            return citaRepository.findByPacienteAndEstadoAndDoctorUsuarioNombreContainingIgnoreCaseOrderByFechaHoraDesc(paciente, estado, medico);
+        String estadoFiltro = normalizarParametro(estado);
+        String medicoFiltro = normalizarParametro(medico);
+
+        if (estadoFiltro == null && medicoFiltro == null) {
+            return citaRepository.findByPacienteConDoctorUsuario(paciente);
         }
+
+        if (estadoFiltro != null && medicoFiltro == null) {
+            return citaRepository.findByPacienteAndEstadoConDoctorUsuario(paciente, estadoFiltro);
+        }
+
+        if (estadoFiltro == null) {
+            return citaRepository.findByPacienteAndMedicoNombreConDoctorUsuario(paciente, medicoFiltro);
+        }
+
+        return citaRepository.findByPacienteAndEstadoAndMedicoNombreConDoctorUsuario(
+                paciente,
+                estadoFiltro,
+                medicoFiltro
+        );
     }
 
-    //Medico
-    public org.example.backendp2p4.logic.Medico findMedicoByIdConHorarios(Integer id) { return medicoRepository.findByIdFetchHorarios(id).orElse(null);}
+    public Medico findMedicoByIdConHorarios(Integer id) {
+        return medicoRepository.findByIdFetchHorarios(id).orElse(null);
+    }
 
     public void eliminarHorariosByDoctor(Medico medico) {
         horarioRepository.deleteByDoctor(medico);
@@ -101,10 +179,12 @@ public class Service {
     }
 
     public Optional<Medico> findMedicoById(Integer id) {
-        org.example.backendp2p4.logic.Medico medico = medicoRepository.findById(id).orElse(null);
+        Medico medico = medicoRepository.findById(id).orElse(null);
+
         if (medico != null) {
             Hibernate.initialize(medico.getUsuario());
         }
+
         return Optional.ofNullable(medico);
     }
 
@@ -118,11 +198,20 @@ public class Service {
     }
 
     public List<MedicoCardDTO> buscarMedicos(String especialidad, String ciudad) {
-        if (especialidad == null) especialidad = "";
-        if (ciudad == null) ciudad = "";
+        if (especialidad == null) {
+            especialidad = "";
+        }
 
-        List<org.example.backendp2p4.logic.Medico> medicosFiltrados = medicoRepository
-                .findMedicoByEspecialidadContainingIgnoreCaseAndCiudadContainingIgnoreCaseAndEstadoContainingIgnoreCase(especialidad, ciudad, "APROBADO");
+        if (ciudad == null) {
+            ciudad = "";
+        }
+
+        List<Medico> medicosFiltrados = medicoRepository
+                .findMedicoByEspecialidadContainingIgnoreCaseAndCiudadContainingIgnoreCaseAndEstadoContainingIgnoreCase(
+                        especialidad,
+                        ciudad,
+                        "APROBADO"
+                );
 
         return convertirAMedicoCardDTO(medicosFiltrados);
     }
@@ -135,17 +224,16 @@ public class Service {
         dto.setCostoConsulta(medico.getCostoConsulta());
         dto.setEstado(medico.getEstado());
 
-        if (dto instanceof MedicoCardDTO) {
-            ((MedicoCardDTO) dto).setInstalacion(medico.getInstalacion());
-            ((MedicoCardDTO) dto).setImagen(medico.getImagen());
-        }
-        if (dto instanceof MedicoCardDTO perfil) {
-            perfil.setFrecuencia(medico.getFrecuencia());
+        if (dto instanceof MedicoCardDTO cardDTO) {
+            cardDTO.setInstalacion(medico.getInstalacion());
+            cardDTO.setImagen(medico.getImagen());
+            cardDTO.setFrecuencia(medico.getFrecuencia());
         }
     }
 
     private HorarioDTO convertirAHorarioDTO(Horario h, Medico medico) {
         HorarioDTO horarioDTO = new HorarioDTO();
+
         horarioDTO.setDiaSemana(convertirDia(h.getDia()));
         horarioDTO.setHoraInicio(String.format("%02d:00", h.getHorainicio()));
         horarioDTO.setHoraFin(String.format("%02d:00", h.getHorafin()));
@@ -161,7 +249,9 @@ public class Service {
                 targetDate.atTime(h.getHorainicio(), 0),
                 targetDate.atTime(h.getHorafin(), 0)
         );
+
         horarioDTO.setOcupado(ocupado);
+
         return horarioDTO;
     }
 
@@ -180,6 +270,7 @@ public class Service {
                     .collect(Collectors.toList());
 
             dto.setHorarios(horarios);
+
             return dto;
         });
     }
@@ -205,7 +296,13 @@ public class Service {
                 .collect(Collectors.toMap(Horario::getDia, h -> h, (a, b) -> a));
 
         List<String> diasSemana = List.of(
-                "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"
+                "Lunes",
+                "Martes",
+                "Miércoles",
+                "Jueves",
+                "Viernes",
+                "Sábado",
+                "Domingo"
         );
 
         List<Integer> numerosDia = List.of(1, 2, 3, 4, 5, 6, 7);
@@ -233,6 +330,7 @@ public class Service {
         });
 
         dto.setHorarios(listaHorarios);
+
         return dto;
     }
 
@@ -249,14 +347,12 @@ public class Service {
             MedicoCardDTO dto = new MedicoCardDTO();
             mapearDatosBasicosMedico(medico, dto);
 
-            dto.setInstalacion(medico.getInstalacion());
-            dto.setImagen(medico.getImagen());
-
             List<HorarioDTO> horarios = medico.getHorarios().stream()
                     .map(h -> convertirAHorarioDTO(h, medico))
                     .collect(Collectors.toList());
 
             dto.setHorarios(horarios);
+
             return dto;
         });
     }
@@ -267,17 +363,21 @@ public class Service {
             String nombreUsuario = JwtUtil.extraerNombreDesdeToken(token);
 
             Usuario usuario = findUsuarioByNombre(nombreUsuario);
-            if (usuario == null || !"MEDICO".equals(usuario.getRol())) return Optional.empty();
+
+            if (usuario == null || !"MEDICO".equals(usuario.getRol())) {
+                return Optional.empty();
+            }
 
             return findMedicoById(usuario.getId());
+
         } catch (Exception e) {
             return Optional.empty();
         }
     }
 
-
-    //Paciente
-    public Optional<Paciente> findPacienteByUsuario(Usuario usuario) { return pacienteRepository.findByUsuario(usuario);}
+    public Optional<Paciente> findPacienteByUsuario(Usuario usuario) {
+        return pacienteRepository.findByUsuario(usuario);
+    }
 
     public Paciente savePaciente(Paciente paciente) {
         saveUsuario(paciente.getUsuario());
@@ -290,16 +390,18 @@ public class Service {
             String nombreUsuario = JwtUtil.extraerNombreDesdeToken(token);
 
             Usuario usuario = findUsuarioByNombre(nombreUsuario);
-            if (usuario == null || !"PACIENTE".equals(usuario.getRol())) return Optional.empty();
+
+            if (usuario == null || !"PACIENTE".equals(usuario.getRol())) {
+                return Optional.empty();
+            }
 
             return findPacienteByUsuario(usuario);
+
         } catch (Exception e) {
             return Optional.empty();
         }
     }
 
-
-    //Usuarios
     public Usuario saveUsuario(Usuario usuario) {
         try {
             return usuarioRepository.save(usuario);
@@ -308,7 +410,6 @@ public class Service {
         }
     }
 
-    //extra
     private String convertirDia(int dia) {
         return switch (dia) {
             case 1 -> "Lunes";
@@ -321,5 +422,4 @@ public class Service {
             default -> "Desconocido";
         };
     }
-
 }
