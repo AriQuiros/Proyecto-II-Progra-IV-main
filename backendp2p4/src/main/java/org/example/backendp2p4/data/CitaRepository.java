@@ -20,7 +20,11 @@ public interface CitaRepository extends JpaRepository<Cita, Integer> {
 
     List<Cita> findByDoctorAndPacienteUsuarioNombreContainingIgnoreCase(Medico doctor, String nombre);
 
-    List<Cita> findByDoctorAndEstadoAndPacienteUsuarioNombreContainingIgnoreCase(Medico doctor, String estado, String nombre);
+    List<Cita> findByDoctorAndEstadoAndPacienteUsuarioNombreContainingIgnoreCase(
+            Medico doctor,
+            String estado,
+            String nombre
+    );
 
     boolean existsByDoctorAndFechaHoraBetween(Medico doctor, LocalDateTime inicio, LocalDateTime fin);
 
@@ -28,10 +32,23 @@ public interface CitaRepository extends JpaRepository<Cita, Integer> {
 
     List<Cita> findByPacienteAndEstadoOrderByFechaHoraDesc(Paciente paciente, String estado);
 
-    List<Cita> findByPacienteAndDoctorUsuarioNombreContainingIgnoreCaseOrderByFechaHoraDesc(Paciente paciente, String nombre);
+    List<Cita> findByPacienteAndDoctorUsuarioNombreContainingIgnoreCaseOrderByFechaHoraDesc(
+            Paciente paciente,
+            String nombre
+    );
 
-    List<Cita> findByPacienteAndEstadoAndDoctorUsuarioNombreContainingIgnoreCaseOrderByFechaHoraDesc(Paciente paciente, String estado, String nombre);
+    List<Cita> findByPacienteAndEstadoAndDoctorUsuarioNombreContainingIgnoreCaseOrderByFechaHoraDesc(
+            Paciente paciente,
+            String estado,
+            String nombre
+    );
 
+    /*
+     * Consulta para cargar todas las citas de un médico.
+     *
+     * JOIN FETCH carga también el paciente y su usuario en la misma consulta.
+     * Esto evita problemas de carga perezosa cuando después se construye el DTO.
+     */
     @Query("""
             SELECT c
             FROM Cita c
@@ -42,6 +59,14 @@ public interface CitaRepository extends JpaRepository<Cita, Integer> {
             """)
     List<Cita> findByDoctorConPacienteUsuario(@Param("doctor") Medico doctor);
 
+    /*
+     * Consulta independiente para buscar citas por estado.
+     *
+     * Esta consulta se usa cuando el médico filtra por:
+     * PENDIENTE, CONFIRMADA o CANCELADA.
+     *
+     * También se usa en la búsqueda paralela cuando vienen estado y paciente.
+     */
     @Query("""
             SELECT c
             FROM Cita c
@@ -56,6 +81,12 @@ public interface CitaRepository extends JpaRepository<Cita, Integer> {
             @Param("estado") String estado
     );
 
+    /*
+     * Consulta independiente para buscar citas por nombre del paciente.
+     *
+     * Esta consulta se separa de la consulta por estado para que ambas puedan
+     * ejecutarse al mismo tiempo usando CompletableFuture en el Service.
+     */
     @Query("""
             SELECT c
             FROM Cita c
@@ -70,6 +101,12 @@ public interface CitaRepository extends JpaRepository<Cita, Integer> {
             @Param("paciente") String paciente
     );
 
+    /*
+     * Consulta directa por estado y paciente.
+     *
+     * Se deja disponible, aunque el Service usa la versión paralela cuando
+     * vienen ambos filtros al mismo tiempo.
+     */
     @Query("""
             SELECT c
             FROM Cita c
@@ -86,6 +123,11 @@ public interface CitaRepository extends JpaRepository<Cita, Integer> {
             @Param("paciente") String paciente
     );
 
+    /*
+     * Consulta para cargar todas las citas de un paciente.
+     *
+     * JOIN FETCH carga también el doctor y su usuario.
+     */
     @Query("""
             SELECT c
             FROM Cita c

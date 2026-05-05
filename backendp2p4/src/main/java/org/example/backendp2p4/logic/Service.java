@@ -68,63 +68,174 @@ public class Service {
         return citaRepository.save(cita);
     }
 
+    /*
+     * Método usado por el panel del médico para buscar y filtrar citas.
+     *
+     * Este método recibe los filtros:
+     * - estado: PENDIENTE, CONFIRMADA o CANCELADA
+     * - paciente: texto escrito en el buscador
+     *
+     * Si vienen ambos filtros, se usa búsqueda paralela.
+     */
     public List<Cita> buscarCitasPorMedico(Medico medico, String estado, String paciente) {
         if (medico == null) {
             return Collections.emptyList();
         }
 
+        /*
+         * Se limpian los parámetros recibidos desde el frontend.
+         *
+         * Si estado o paciente vienen vacíos, se convierten a null.
+         */
         String estadoFiltro = normalizarParametro(estado);
         String pacienteFiltro = normalizarParametro(paciente);
 
+        /*
+         * Caso 1:
+         * No hay filtros.
+         *
+         * Se cargan todas las citas del médico.
+         */
         if (estadoFiltro == null && pacienteFiltro == null) {
             return citaRepository.findByDoctorConPacienteUsuario(medico);
         }
 
+        /*
+         * Caso 2:
+         * Solo hay filtro por estado.
+         *
+         * No se paraleliza porque solo hay una búsqueda.
+         */
         if (estadoFiltro != null && pacienteFiltro == null) {
             return citaRepository.findByDoctorAndEstadoConPacienteUsuario(medico, estadoFiltro);
         }
 
+        /*
+         * Caso 3:
+         * Solo hay filtro por paciente.
+         *
+         * No se paraleliza porque solo hay una búsqueda.
+         */
         if (estadoFiltro == null) {
             return citaRepository.findByDoctorAndPacienteNombreConPacienteUsuario(medico, pacienteFiltro);
         }
 
+        /*
+         * Caso 4:
+         * Hay filtro por estado y por paciente.
+         *
+         * Aquí sí se paraleliza:
+         * - una tarea busca por estado
+         * - otra tarea busca por paciente
+         * - luego se cruzan los resultados por id
+         */
         return buscarCitasPorMedicoEnParalelo(medico, estadoFiltro, pacienteFiltro);
     }
 
+    /*
+     * Paralelización real de búsqueda y filtrado de citas.
+     *
+     * Antes se podía resolver con una consulta directa:
+     * estado AND paciente.
+     *
+     * Ahora se divide el trabajo en dos búsquedas independientes:
+     *
+     * Hilo 1 -> busca citas por estado.
+     * Hilo 2 -> busca citas por paciente.
+     *
+     * Cuando ambas terminan, se combinan los resultados usando una intersección.
+     */
     private List<Cita> buscarCitasPorMedicoEnParalelo(Medico medico, String estado, String paciente) {
+        /*
+         * Se crea un pool de hilos con la configuración del proyecto.
+         *
+         * Si ParallelConfig.CANTIDAD_HILOS = 4, entonces hay hasta 4 hilos
+         * disponibles para ejecutar tareas simultáneamente.
+         */
         ExecutorService executor = ParallelConfig.crearExecutor();
 
         try {
+            /*
+             * Primera tarea asíncrona:
+             * busca las citas del médico que coinciden con el estado.
+             */
             CompletableFuture<List<Cita>> citasPorEstado = CompletableFuture.supplyAsync(
                     () -> citaRepository.findByDoctorAndEstadoConPacienteUsuario(medico, estado),
                     executor
             );
 
+            /*
+             * Segunda tarea asíncrona:
+             * busca las citas del médico que coinciden con el nombre del paciente.
+             *
+             * Esta tarea se ejecuta al mismo tiempo que la búsqueda por estado.
+             */
             CompletableFuture<List<Cita>> citasPorPaciente = CompletableFuture.supplyAsync(
                     () -> citaRepository.findByDoctorAndPacienteNombreConPacienteUsuario(medico, paciente),
                     executor
             );
 
+            /*
+             * thenCombine espera a que ambas tareas terminen.
+             *
+             * Cuando ya existen las dos listas:
+             * - citas por estado
+             * - citas por paciente
+             *
+             * se llama a intersectarCitasPorId().
+             *
+             * El resultado final son las citas que cumplen ambos filtros.
+             */
             return citasPorEstado
                     .thenCombine(citasPorPaciente, this::intersectarCitasPorId)
                     .join();
 
         } finally {
+            /*
+             * Se apaga el executor para liberar los hilos utilizados.
+             */
             executor.shutdown();
         }
     }
 
+    /*
+     * Intersección de resultados de citas.
+     *
+     * Recibe dos listas:
+     * - primeraLista: citas encontradas por estado
+     * - segundaLista: citas encontradas por paciente
+     *
+     * Devuelve solo las citas que aparecen en ambas listas.
+     *
+     * Eso equivale a aplicar:
+     * estado AND paciente.
+     */
     private List<Cita> intersectarCitasPorId(List<Cita> primeraLista, List<Cita> segundaLista) {
+        /*
+         * Se guardan los ids de la segunda lista en un Set.
+         *
+         * El Set permite verificar más rápido si una cita existe en la otra lista.
+         */
         Set<Integer> idsSegundaLista = segundaLista.stream()
                 .map(Cita::getId)
                 .collect(Collectors.toSet());
 
+        /*
+         * Se recorre la primera lista y se dejan únicamente las citas
+         * cuyo id también apareció en la segunda lista.
+         */
         return primeraLista.stream()
                 .filter(cita -> idsSegundaLista.contains(cita.getId()))
                 .sorted(Comparator.comparing(Cita::getFechaHora).reversed())
                 .toList();
     }
 
+    /*
+     * Limpia parámetros del frontend.
+     *
+     * Si el valor viene null, vacío o solo con espacios, devuelve null.
+     * Si trae texto válido, devuelve el texto sin espacios al inicio ni al final.
+     */
     private String normalizarParametro(String valor) {
         if (valor == null || valor.isBlank()) {
             return null;
@@ -199,24 +310,12 @@ public class Service {
     }
 
     /*
-     * Método principal usado por la pantalla donde aparecen los médicos.
+     * Método usado por la pantalla principal de médicos.
      *
-     * Aquí se decide cómo buscar:
-     *
-     * 1. Si vienen especialidad y ciudad:
-     *    se paralelizan dos búsquedas independientes.
-     *
-     * 2. Si solo viene especialidad:
-     *    se hace una consulta normal por especialidad.
-     *
-     * 3. Si solo viene ciudad:
-     *    se hace una consulta normal por ciudad.
-     *
-     * 4. Si no viene ningún filtro:
-     *    se cargan todos los médicos aprobados.
-     *
-     * Después de obtener los médicos, se convierten a MedicoCardDTO.
-     * Esa conversión también usa paralelismo por medio de convertirAMedicoCardDTO().
+     * Si vienen especialidad y ciudad, también se paraleliza:
+     * - una búsqueda por especialidad
+     * - una búsqueda por ciudad
+     * - luego se cruzan los médicos por id
      */
     public List<MedicoCardDTO> buscarMedicos(String especialidad, String ciudad) {
         String especialidadFiltro = normalizarParametro(especialidad);
@@ -225,163 +324,73 @@ public class Service {
         List<Medico> medicosFiltrados;
 
         if (especialidadFiltro != null && ciudadFiltro != null) {
-
-            /*
-             * Caso paralelizado:
-             * cuando el usuario filtra por especialidad y ciudad al mismo tiempo.
-             */
             medicosFiltrados = buscarMedicosPorEspecialidadYCiudadEnParalelo(
                     especialidadFiltro,
                     ciudadFiltro
             );
-
         } else if (especialidadFiltro != null) {
-
-            /*
-             * Caso no paralelizado:
-             * solo hay filtro por especialidad, entonces basta una consulta.
-             */
             medicosFiltrados = medicoRepository.findMedicosConUsuarioYHorariosPorEspecialidad(
                     especialidadFiltro,
                     "APROBADO"
             );
-
         } else if (ciudadFiltro != null) {
-
-            /*
-             * Caso no paralelizado:
-             * solo hay filtro por ciudad, entonces basta una consulta.
-             */
             medicosFiltrados = medicoRepository.findMedicosConUsuarioYHorariosPorCiudad(
                     ciudadFiltro,
                     "APROBADO"
             );
-
         } else {
-
-            /*
-             * Sin filtros:
-             * se devuelven todos los médicos aprobados.
-             */
             medicosFiltrados = medicoRepository.findMedicosConUsuarioYHorariosPorEstado("APROBADO");
         }
 
-        /*
-         * Luego del filtrado, el mapeo a DTO también se ejecuta en paralelo.
-         */
         return convertirAMedicoCardDTO(medicosFiltrados);
     }
 
     /*
-     * Aquí está la paralelización real de la búsqueda por especialidad y ciudad.
+     * Paralelización de búsqueda de médicos por especialidad y ciudad.
      *
-     * Antes:
-     * se hacía una sola consulta con especialidad AND ciudad.
+     * Hilo 1 -> busca médicos por especialidad.
+     * Hilo 2 -> busca médicos por ciudad.
      *
-     * Ahora:
-     * se hacen dos consultas independientes al mismo tiempo:
-     *
-     * - Hilo 1: busca médicos por especialidad.
-     * - Hilo 2: busca médicos por ciudad.
-     *
-     * Cuando ambas terminan, se combinan sus resultados usando una intersección
-     * por id del médico. Así se conservan únicamente los médicos que cumplen
-     * ambos filtros.
+     * Luego se cruzan los resultados por id del médico.
      */
     private List<Medico> buscarMedicosPorEspecialidadYCiudadEnParalelo(String especialidad, String ciudad) {
-        /*
-         * Se crea un pool de hilos usando la configuración existente del proyecto.
-         * Este executor permite ejecutar tareas simultáneamente.
-         */
         ExecutorService executor = ParallelConfig.crearExecutor();
 
         try {
-            /*
-             * Primera tarea asíncrona:
-             * busca médicos aprobados cuya especialidad coincida con el filtro.
-             *
-             * CompletableFuture.supplyAsync ejecuta esta consulta en un hilo separado.
-             */
             CompletableFuture<List<Medico>> medicosPorEspecialidad = CompletableFuture.supplyAsync(
                     () -> medicoRepository.findMedicosConUsuarioYHorariosPorEspecialidad(especialidad, "APROBADO"),
                     executor
             );
 
-            /*
-             * Segunda tarea asíncrona:
-             * busca médicos aprobados cuya ciudad coincida con el filtro.
-             *
-             * Esta consulta se ejecuta al mismo tiempo que la búsqueda por especialidad.
-             */
             CompletableFuture<List<Medico>> medicosPorCiudad = CompletableFuture.supplyAsync(
                     () -> medicoRepository.findMedicosConUsuarioYHorariosPorCiudad(ciudad, "APROBADO"),
                     executor
             );
 
-            /*
-             * thenCombine espera a que ambas tareas terminen.
-             *
-             * Cuando ya existen los dos resultados:
-             * - lista de médicos por especialidad
-             * - lista de médicos por ciudad
-             *
-             * se llama a intersectarMedicosPorId para dejar solo los médicos
-             * que aparecen en ambas listas.
-             *
-             * join obtiene el resultado final.
-             */
             return medicosPorEspecialidad
                     .thenCombine(medicosPorCiudad, this::intersectarMedicosPorId)
                     .join();
 
         } finally {
-            /*
-             * Se apaga el executor para liberar los hilos utilizados.
-             */
             executor.shutdown();
         }
     }
 
     /*
-     * Intersección de resultados.
+     * Intersección de médicos.
      *
-     * Esta función recibe:
-     * - lista 1: médicos encontrados por especialidad
-     * - lista 2: médicos encontrados por ciudad
-     *
-     * Luego devuelve solamente los médicos cuyo id aparece en ambas listas.
-     * Esto equivale a aplicar:
-     *
-     * especialidad AND ciudad
-     *
-     * pero usando dos búsquedas paralelas.
+     * Devuelve solo los médicos que aparecen tanto en la lista de especialidad
+     * como en la lista de ciudad.
      */
     private List<Medico> intersectarMedicosPorId(List<Medico> primeraLista, List<Medico> segundaLista) {
-        /*
-         * Se guardan los ids de la segunda lista en un Set.
-         *
-         * Usar Set permite verificar si un id existe de forma más eficiente
-         * que recorrer toda la lista por cada médico.
-         */
         Set<Integer> idsSegundaLista = segundaLista.stream()
                 .map(Medico::getId)
                 .collect(Collectors.toSet());
 
-        /*
-         * Este Set evita duplicados en el resultado final.
-         */
         Set<Integer> idsAgregados = new HashSet<>();
 
         return primeraLista.stream()
-                /*
-                 * Se conserva solo el médico que también apareció
-                 * en la búsqueda por ciudad.
-                 */
                 .filter(medico -> idsSegundaLista.contains(medico.getId()))
-
-                /*
-                 * Se evita agregar el mismo médico más de una vez.
-                 */
                 .filter(medico -> idsAgregados.add(medico.getId()))
                 .toList();
     }
@@ -426,30 +435,17 @@ public class Service {
     }
 
     /*
-     * Este método también trabaja en paralelo.
+     * Convierte médicos a DTO en paralelo.
      *
-     * Recibe la lista final de médicos ya filtrados y convierte cada médico
-     * a MedicoCardDTO usando ParallelUtils.mapearEnParalelo.
-     *
-     * Eso significa que si hay varios médicos, el armado de las tarjetas
-     * y sus horarios se distribuye entre varios hilos.
+     * Por cada médico se crea una tarea independiente.
+     * La cantidad máxima de tareas simultáneas depende de ParallelConfig.CANTIDAD_HILOS.
      */
     public List<MedicoCardDTO> convertirAMedicoCardDTO(List<Medico> medicos) {
-        /*
-         * Se inicializan las relaciones lazy antes del procesamiento paralelo.
-         *
-         * Esto evita errores de LazyInitializationException cuando cada hilo
-         * accede a usuario u horarios.
-         */
         medicos.forEach(medico -> {
             Hibernate.initialize(medico.getUsuario());
             Hibernate.initialize(medico.getHorarios());
         });
 
-        /*
-         * Mapeo paralelo:
-         * cada médico se transforma a DTO en paralelo.
-         */
         return ParallelUtils.mapearEnParalelo(medicos, medico -> {
             MedicoCardDTO dto = new MedicoCardDTO();
             mapearDatosBasicosMedico(medico, dto);
@@ -523,13 +519,6 @@ public class Service {
         return dto;
     }
 
-    /*
-     * Cuando la pantalla principal carga sin filtros, se obtienen todos
-     * los médicos aprobados.
-     *
-     * Luego se reutiliza convertirAMedicoCardDTO, que ya paraleliza
-     * el armado de las tarjetas de médicos.
-     */
     public List<MedicoCardDTO> getMedicosConHorarios() {
         List<Medico> medicos = medicoRepository.findMedicosConUsuarioYHorariosPorEstado("APROBADO");
         return convertirAMedicoCardDTO(medicos);

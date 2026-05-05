@@ -13,6 +13,7 @@ import org.springframework.data.repository.query.Param;
 
 @Repository
 public interface MedicoRepository extends JpaRepository<Medico, Integer> {
+
     List<Medico> findMedicoByEstado(String estado);
 
     Optional<Medico> findByUsuario(Usuario usuario);
@@ -27,10 +28,9 @@ public interface MedicoRepository extends JpaRepository<Medico, Integer> {
     );
 
     /*
-     * Esta consulta obtiene todos los médicos aprobados con su usuario y horarios.
+     * Consulta para cargar médicos aprobados con usuario y horarios.
      *
-     * JOIN FETCH evita que luego se hagan múltiples consultas adicionales
-     * cuando se accede a medico.getUsuario() o medico.getHorarios().
+     * JOIN FETCH permite cargar las relaciones necesarias en una sola consulta.
      */
     @Query("""
             SELECT DISTINCT m FROM Medico m
@@ -43,8 +43,8 @@ public interface MedicoRepository extends JpaRepository<Medico, Integer> {
     /*
      * Consulta independiente para buscar médicos por especialidad.
      *
-     * Esta consulta se creó separada de la búsqueda por ciudad para que pueda
-     * ejecutarse en paralelo desde el Service usando CompletableFuture.
+     * Se separa de la búsqueda por ciudad para que ambas consultas puedan
+     * ejecutarse en paralelo desde el Service.
      */
     @Query("""
             SELECT DISTINCT m FROM Medico m
@@ -61,8 +61,8 @@ public interface MedicoRepository extends JpaRepository<Medico, Integer> {
     /*
      * Consulta independiente para buscar médicos por ciudad.
      *
-     * Esta consulta también se ejecuta en paralelo desde el Service.
-     * Luego sus resultados se cruzan con los resultados de especialidad.
+     * Se ejecuta en paralelo junto con la consulta por especialidad cuando
+     * el usuario usa ambos filtros en la pantalla principal.
      */
     @Query("""
             SELECT DISTINCT m FROM Medico m
