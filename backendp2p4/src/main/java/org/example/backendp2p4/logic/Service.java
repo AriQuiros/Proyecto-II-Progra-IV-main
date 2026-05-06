@@ -51,6 +51,19 @@ public class Service {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    private List<MedicoCardDTO> ordenarMedicosPorPrecioAscendente(List<MedicoCardDTO> medicos) {
+        List<MedicoCardDTO> medicosOrdenados = new ArrayList<>(medicos);
+
+        medicosOrdenados.sort(
+                Comparator.comparing(
+                        MedicoCardDTO::getCostoConsulta,
+                        Comparator.nullsLast(Integer::compareTo)
+                )
+        );
+
+        return medicosOrdenados;
+    }
+
     public boolean existeUsuarioConNombre(String nombre) {
         return usuarioRepository.findFirstByNombre(nombre).isPresent();
     }
@@ -342,7 +355,9 @@ public class Service {
             medicosFiltrados = medicoRepository.findMedicosConUsuarioYHorariosPorEstado("APROBADO");
         }
 
-        return convertirAMedicoCardDTO(medicosFiltrados);
+        List<MedicoCardDTO> medicosDTO = convertirAMedicoCardDTO(medicosFiltrados);
+
+        return ordenarMedicosPorPrecioAscendente(medicosDTO);
     }
 
     /*
@@ -521,7 +536,9 @@ public class Service {
 
     public List<MedicoCardDTO> getMedicosConHorarios() {
         List<Medico> medicos = medicoRepository.findMedicosConUsuarioYHorariosPorEstado("APROBADO");
-        return convertirAMedicoCardDTO(medicos);
+        List<MedicoCardDTO> medicosDTO = convertirAMedicoCardDTO(medicos);
+
+        return ordenarMedicosPorPrecioAscendente(medicosDTO);
     }
 
     public Optional<Medico> autenticarYObtenerMedico(String authHeader) {
