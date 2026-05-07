@@ -64,6 +64,50 @@ public class Service {
 
         return medicosOrdenados;
     }
+    /*
+     * Ordena secuencialmente los médicos del panel administrativo.
+     *
+     * Objetivo:
+     * Mostrar primero los médicos con estado PENDIENTE, ya que son los que
+     * requieren revisión por parte del administrador.
+     *
+     * Prioridad:
+     * 1. PENDIENTE
+     * 2. APROBADO
+     * 3. RECHAZADO
+     * 4. Otros valores o null
+     */
+    public List<MedicoAprobadoDTO> ordenarMedicosPendientesPrimero(
+            List<MedicoAprobadoDTO> medicos
+    ) {
+        medicos.sort(
+                Comparator.comparingInt(medico -> prioridadEstadoMedico(medico.getEstado()))
+        );
+
+        return medicos;
+    }
+
+    /*
+     * Asigna una prioridad numérica a cada estado.
+     *
+     * Entre menor sea el número, más arriba aparece el médico en la lista.
+     */
+    private int prioridadEstadoMedico(String estado) {
+        if (estado == null) {
+            return 99;
+        }
+
+        switch (estado.trim().toUpperCase()) {
+            case "PENDIENTE":
+                return 1;
+            case "APROBADO":
+                return 2;
+            case "RECHAZADO":
+                return 3;
+            default:
+                return 99;
+        }
+    }
 
     public boolean existeUsuarioConNombre(String nombre) {
         return usuarioRepository.findFirstByNombre(nombre).isPresent();

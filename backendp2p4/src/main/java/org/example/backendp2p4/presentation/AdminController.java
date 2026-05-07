@@ -25,9 +25,21 @@ public class AdminController {
 
         long inicio = System.nanoTime();
 
+        /*
+         * Se obtienen todos los médicos registrados en el sistema.
+         */
         List<MedicoAprobadoDTO> medicos = service.convertirAMedicoAprobadoDTO(
                 (List<Medico>) service.findAllMedicos()
         );
+
+        /*
+         * Se ordenan secuencialmente para que los médicos con estado PENDIENTE
+         * aparezcan primero en el panel administrativo.
+         *
+         * Esto permite que el administrador vea al inicio los médicos que requieren
+         * revisión o aprobación.
+         */
+        medicos = service.ordenarMedicosPendientesPrimero(medicos);
 
         long fin = System.nanoTime();
 
