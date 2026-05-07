@@ -65,33 +65,43 @@ public class Service {
         return medicosOrdenados;
     }
     /*
-     * Ordena secuencialmente los médicos del panel administrativo.
+     * Ordena la lista de médicos del panel administrativo para que los médicos
+     * con estado PENDIENTE aparezcan primero.
      *
-     * Objetivo:
-     * Mostrar primero los médicos con estado PENDIENTE, ya que son los que
-     * requieren revisión por parte del administrador.
+     * Esta es la versión paralela.
      *
-     * Prioridad:
+     * Se utiliza ParallelUtils.ordenarEnParalelo(), el cual internamente:
+     *
+     * 1. Divide la lista en bloques.
+     * 2. Ordena cada bloque en un hilo diferente.
+     * 3. Usa un ExecutorService creado desde ParallelConfig.
+     * 4. Respeta la cantidad de hilos definida en ParallelConfig.CANTIDAD_HILOS.
+     * 5. Mezcla los bloques ordenados para obtener una lista final ordenada.
+     *
+     * Prioridad del ordenamiento:
      * 1. PENDIENTE
      * 2. APROBADO
      * 3. RECHAZADO
-     * 4. Otros valores o null
+     * 4. Cualquier otro estado o null
+     *
+     * Esto permite que el administrador vea primero los médicos que requieren revisión.
      */
     public List<MedicoAprobadoDTO> ordenarMedicosPendientesPrimero(
             List<MedicoAprobadoDTO> medicos
     ) {
-        medicos.sort(
-                Comparator.comparingInt(medico -> prioridadEstadoMedico(medico.getEstado()))
+        return ParallelUtils.ordenarEnParalelo(
+                medicos,
+                Comparator
+                        .comparingInt((MedicoAprobadoDTO medico) ->
+                                prioridadEstadoMedico(medico.getEstado())
+                        )
+                        .thenComparing(
+                                MedicoAprobadoDTO::getNombre,
+                                Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
+                        )
         );
-
-        return medicos;
     }
 
-    /*
-     * Asigna una prioridad numérica a cada estado.
-     *
-     * Entre menor sea el número, más arriba aparece el médico en la lista.
-     */
     private int prioridadEstadoMedico(String estado) {
         if (estado == null) {
             return 99;

@@ -6,7 +6,7 @@ import java.util.concurrent.Executors;
 public class ParallelConfig {
 
     // Cambia este número cuando quieras probar con más o menos hilos
-    public static int CANTIDAD_HILOS = 3;
+    public static int CANTIDAD_HILOS = 6;
 
     //Este executor permite ejecutar tareas simultáneamente.
     public static ExecutorService crearExecutor() {
