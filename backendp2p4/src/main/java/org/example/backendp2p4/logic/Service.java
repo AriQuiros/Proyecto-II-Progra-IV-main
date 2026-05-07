@@ -33,6 +33,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
+
 @org.springframework.stereotype.Service
 public class Service {
 
@@ -535,10 +536,84 @@ public class Service {
     }
 
     public List<MedicoCardDTO> getMedicosConHorarios() {
-        List<Medico> medicos = medicoRepository.findMedicosConUsuarioYHorariosPorEstado("APROBADO");
-        List<MedicoCardDTO> medicosDTO = convertirAMedicoCardDTO(medicos);
+        /*
+         * Lista donde se van a guardar los médicos convertidos a DTO.
+         *
+         * Primero se construye la lista normalmente, igual que en la versión secuencial.
+         * Luego, cuando la lista ya está completa, se aplica el ordenamiento paralelo.
+         */
+        List<MedicoCardDTO> result = new ArrayList<>();
 
-        return ordenarMedicosPorPrecioAscendente(medicosDTO);
+        /*
+         * Se consultan únicamente los médicos aprobados.
+         */
+        Iterable<Medico> medicos = medicoRepository.findMedicoByEstado("APROBADO");
+
+        /*
+         * Conversión secuencial de entidades Medico a MedicoCardDTO.
+         *
+         * Esta parte se mantiene igual que en la versión original.
+         */
+        for (Medico medico : medicos) {
+            MedicoCardDTO dto = new MedicoCardDTO();
+
+            /*
+             * Se cargan los datos básicos del médico:
+             * nombre, especialidad, ciudad, costo de consulta, etc.
+             */
+            mapearDatosBasicosMedico(medico, dto);
+
+            /*
+             * Se asignan datos adicionales del médico.
+             */
+            dto.setInstalacion(medico.getInstalacion());
+            dto.setImagen(medico.getImagen());
+
+            /*
+             * Se convierten los horarios del médico a HorarioDTO.
+             *
+             * Esta parte sigue siendo secuencial dentro de este método.
+             */
+            List<HorarioDTO> horarios = medico.getHorarios().stream()
+                    .map(h -> convertirAHorarioDTO(h, medico))
+                    .collect(Collectors.toList());
+
+            dto.setHorarios(horarios);
+
+            /*
+             * Se agrega el médico convertido a la lista de resultados.
+             */
+            result.add(dto);
+        }
+
+        /*
+         * Ordenamiento paralelo de médicos por costo de consulta.
+         *
+         * Se usa ParallelUtils.ordenarEnParalelo(), que internamente:
+         *
+         * 1. Divide la lista en bloques.
+         * 2. Ordena cada bloque en un hilo diferente.
+         * 3. Usa la cantidad de hilos definida en ParallelConfig.CANTIDAD_HILOS.
+         * 4. Mezcla los bloques ordenados para obtener una lista final ordenada.
+         *
+         * El Comparator indica que los médicos deben ordenarse de menor a mayor
+         * según el campo costoConsulta.
+         *
+         * Comparator.nullsLast(...) evita errores si algún médico tiene costoConsulta null.
+         * En ese caso, los médicos sin precio quedan al final de la lista.
+         */
+        result = ParallelUtils.ordenarEnParalelo(
+                result,
+                Comparator.comparing(
+                        MedicoCardDTO::getCostoConsulta,
+                        Comparator.nullsLast(Comparator.naturalOrder())
+                )
+        );
+
+        /*
+         * Se devuelve la lista ya ordenada por precio de menor a mayor.
+         */
+        return result;
     }
 
     public Optional<Medico> autenticarYObtenerMedico(String authHeader) {
