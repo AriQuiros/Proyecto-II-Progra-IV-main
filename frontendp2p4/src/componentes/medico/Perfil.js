@@ -6,6 +6,7 @@ import usuarioImg from '../../imagenes/usuario.png';
 const MedicoPerfil = () => {
     const { usuario } = useContext(AppContext);
     const [perfil, setPerfil] = useState(null);
+    const [tiempo, setTiempo] = useState(null);
 
     useEffect(() => {
         const fetchPerfil = async () => {
@@ -15,9 +16,19 @@ const MedicoPerfil = () => {
                         Authorization: `Bearer ${usuario?.token}`,
                     },
                 });
+
                 if (!res.ok) throw new Error('Error al cargar perfil');
+
                 const data = await res.json();
-                setPerfil(data);
+
+                // Ahora el backend devuelve ResponseTiempoDTO:
+                // {
+                //   data: perfilDTO,
+                //   tiempo: tiempoMs
+                // }
+                setPerfil(data.data);
+                setTiempo(data.tiempo);
+
             } catch (err) {
                 console.error('Error:', err);
             }
@@ -33,14 +44,25 @@ const MedicoPerfil = () => {
     return (
         <div className="doctor-perfil-container">
             <h2 className="doctor-perfil-title">Perfil del Dr. {perfil.nombre}</h2>
+
+            {tiempo !== null && (
+                <p className="doctor-perfil-tiempo">
+                    <strong>Tiempo de carga:</strong> {tiempo} ms
+                </p>
+            )}
+
             <div className="doctor-perfil-body">
                 <div className="doctor-perfil-foto">
                     {perfil.imagen ? (
-                        <img src={`http://localhost:8080/images/perfiles/${perfil.imagen}`} alt="Foto de perfil" />
+                        <img
+                            src={`http://localhost:8080/images/perfiles/${perfil.imagen}`}
+                            alt="Foto de perfil"
+                        />
                     ) : (
-                        <img src={usuarioImg} alt="Foto por defecto"/>
+                        <img src={usuarioImg} alt="Foto por defecto" />
                     )}
                 </div>
+
                 <div className="doctor-perfil-info">
                     <p><strong>Nombre:</strong> {perfil.nombre}</p>
                     <p><strong>Especialidad:</strong> {perfil.especialidad}</p>
@@ -48,6 +70,7 @@ const MedicoPerfil = () => {
                     <p><strong>Instalación:</strong> {perfil.instalacion}</p>
                     <p><strong>Costo de Consulta:</strong> ₡{perfil.costoConsulta}</p>
                     <p><strong>Frecuencia de Citas:</strong> {perfil.frecuencia} min</p>
+
                     <p><strong>Horario de atención:</strong></p>
                     <ul className="doctor-perfil-horarios">
                         {perfil.horarios?.map((h, index) => (

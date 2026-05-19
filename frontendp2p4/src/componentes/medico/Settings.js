@@ -9,6 +9,7 @@ const MedicoSettings = () => {
     const [perfil, setPerfil] = useState(null);
     const [imagenPreview, setImagenPreview] = useState(null);
     const [imagenFile, setImagenFile] = useState(null);
+    const [tiempo, setTiempo] = useState(null);
 
     useEffect(() => {
         const fetchPerfil = async () => {
@@ -17,8 +18,11 @@ const MedicoSettings = () => {
                     Authorization: `Bearer ${usuario?.token}`,
                 },
             });
+
             const data = await res.json();
-            setPerfil(data);
+
+            setPerfil(data.data);
+            setTiempo(data.tiempo);
         };
 
         if (usuario?.token) fetchPerfil();
@@ -72,6 +76,11 @@ const MedicoSettings = () => {
     return (
         <div className="doctor-settings-container">
             <h2>Editar Perfil Médico</h2>
+            {tiempo !== null && (
+                <div className="doctor-settings-form-group">
+                    <strong>Tiempo:</strong> {tiempo} ms
+                </div>
+            )}
             <form onSubmit={guardarPerfil} encType="multipart/form-data">
                 <div className="doctor-settings-form-row">
                     {/* Imagen */}

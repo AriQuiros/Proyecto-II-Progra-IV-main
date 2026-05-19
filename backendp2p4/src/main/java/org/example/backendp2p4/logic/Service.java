@@ -541,15 +541,49 @@ public class Service {
     }
 
     public MedicoCardDTO convertirAMedicoPerfilDTO(Medico medico) {
+        /*
+         * Se inicializan las relaciones necesarias antes de entrar al procesamiento
+         * paralelo. Esto evita errores de LazyInitializationException cuando los hilos
+         * intentan acceder a usuario u horarios.
+         */
         Hibernate.initialize(medico.getUsuario());
         Hibernate.initialize(medico.getHorarios());
 
+        /*
+         * Se crea el DTO principal del perfil del médico.
+         */
         MedicoCardDTO dto = new MedicoCardDTO();
+
+        /*
+         * Se copian los datos básicos del médico:
+         * nombre, especialidad, ciudad, instalación, imagen, costo, frecuencia, etc.
+         */
         mapearDatosBasicosMedico(medico, dto);
 
+        /*
+         * Se crea un mapa para acceder rápido al horario de cada día.
+         *
+         * La llave es el número del día:
+         * 1 = Lunes
+         * 2 = Martes
+         * 3 = Miércoles
+         * 4 = Jueves
+         * 5 = Viernes
+         * 6 = Sábado
+         * 7 = Domingo
+         *
+         * Si hubiera más de un horario para un mismo día, se toma el primero.
+         */
         Map<Integer, Horario> horariosPorDia = medico.getHorarios().stream()
-                .collect(Collectors.toMap(Horario::getDia, h -> h, (a, b) -> a));
+                .collect(Collectors.toMap(
+                        Horario::getDia,
+                        h -> h,
+                        (a, b) -> a
+                ));
 
+        /*
+         * Lista con los nombres de los días que se van a mostrar en Settings.
+         */
         List<String> diasSemana = List.of(
                 "Lunes",
                 "Martes",
@@ -560,21 +594,53 @@ public class Service {
                 "Domingo"
         );
 
+        /*
+         * Lista de números de día.
+         *
+         * Esta lista será procesada en paralelo.
+         * Cada número representa una tarea independiente.
+         */
         List<Integer> numerosDia = List.of(1, 2, 3, 4, 5, 6, 7);
 
+        /*
+         * Paralelización de la generación de horarios del perfil.
+         *
+         * ParallelUtils.mapearEnParalelo crea tareas independientes para cada día
+         * de la semana. La cantidad de tareas que pueden ejecutarse al mismo tiempo
+         * depende de ParallelConfig.CANTIDAD_HILOS.
+         *
+         * Ejemplo:
+         * Si CANTIDAD_HILOS = 2, se procesan hasta 2 días al mismo tiempo.
+         * Si CANTIDAD_HILOS = 6, se procesan hasta 6 días al mismo tiempo.
+         */
         List<HorarioDTO> listaHorarios = ParallelUtils.mapearEnParalelo(numerosDia, numeroDia -> {
             HorarioDTO horarioDTO = new HorarioDTO();
+
+            /*
+             * Se asigna el nombre del día según el número recibido.
+             */
             horarioDTO.setDiaSemana(diasSemana.get(numeroDia - 1));
 
-            Horario h = horariosPorDia.get(numeroDia);
+            /*
+             * Se busca si el médico tiene horario para ese día.
+             */
+            Horario horario = horariosPorDia.get(numeroDia);
 
-            if (h != null) {
-                HorarioDTO hDTO = convertirAHorarioDTO(h, medico);
-                horarioDTO.setHoraInicio(hDTO.getHoraInicio());
-                horarioDTO.setHoraFin(hDTO.getHoraFin());
-                horarioDTO.setFechaReal(hDTO.getFechaReal());
-                horarioDTO.setOcupado(hDTO.isOcupado());
+            /*
+             * Si existe horario, se convierte usando el método que ya tiene el proyecto.
+             */
+            if (horario != null) {
+                HorarioDTO horarioConvertido = convertirAHorarioDTO(horario, medico);
+
+                horarioDTO.setHoraInicio(horarioConvertido.getHoraInicio());
+                horarioDTO.setHoraFin(horarioConvertido.getHoraFin());
+                horarioDTO.setFechaReal(horarioConvertido.getFechaReal());
+                horarioDTO.setOcupado(horarioConvertido.isOcupado());
             } else {
+                /*
+                 * Si no existe horario para ese día, se devuelve un horario vacío.
+                 * Esto permite que Settings siempre muestre los 7 días.
+                 */
                 horarioDTO.setHoraInicio("");
                 horarioDTO.setHoraFin("");
                 horarioDTO.setFechaReal("");
@@ -584,6 +650,9 @@ public class Service {
             return horarioDTO;
         });
 
+        /*
+         * Se asigna la lista de horarios ya generada en paralelo.
+         */
         dto.setHorarios(listaHorarios);
 
         return dto;

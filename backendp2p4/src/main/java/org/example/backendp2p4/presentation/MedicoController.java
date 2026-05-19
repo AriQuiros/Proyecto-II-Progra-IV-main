@@ -98,12 +98,24 @@ public class MedicoController {
     }
 
     @GetMapping("/perfil")
-    public ResponseEntity<MedicoCardDTO> obtenerPerfil(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<ResponseTiempoDTO<MedicoCardDTO>> obtenerPerfil(
+            @RequestHeader("Authorization") String authHeader
+    ) {
+        long inicio = System.nanoTime();
+
         Optional<Medico> medicoOpt = service.autenticarYObtenerMedico(authHeader);
-        if (medicoOpt.isEmpty()) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (medicoOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
         MedicoCardDTO perfilDTO = service.convertirAMedicoPerfilDTO(medicoOpt.get());
-        return ResponseEntity.ok(perfilDTO);
+
+        long fin = System.nanoTime();
+
+        ResponseTiempoDTO<MedicoCardDTO> response =
+                new ResponseTiempoDTO<>(perfilDTO, (fin - inicio) / 1_000_000);
+
+        return ResponseEntity.ok(response);
     }
 
 
